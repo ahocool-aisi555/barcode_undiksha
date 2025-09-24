@@ -48,12 +48,33 @@
     let scannerStarted = false;
 
     // Fungsi mainkan beep
-    function playBeep() {
-      beepAudio.currentTime = 0;
-      beepAudio.play().catch(e => {
-        console.warn("Gagal mainkan beep (mungkin belum interaksi user):", e);
-      });
-    }
+function playBeep() {
+  try {
+    // Buat context audio (hanya sekali)
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    // Atur suara: frekuensi 800 Hz, durasi 100 ms
+    oscillator.type = 'sine';        // atau 'square' untuk suara lebih tajam
+    oscillator.frequency.value = 800; // Hz
+    gainNode.gain.value = 0.3;       // volume (0.0 - 1.0)
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    // Mulai & hentikan suara
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.1); // 0.1 detik = 100 ms
+
+    // Opsional: tutup context setelah selesai (opsional, tapi aman)
+    setTimeout(() => {
+      if (ctx.state === 'running') ctx.close();
+    }, 200);
+  } catch (e) {
+    console.warn('Gagal memainkan beep:', e);
+  }
+}
 
    function startScanner() {
     if (scannerStarted) return;
