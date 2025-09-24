@@ -3,110 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Barcode & QR Scanner</title>
-  <script src="https://unpkg.com/@zxing/library@0.12.3/umd/index.min.js"></script>
+  <title>Barcode Scanner - Fixed</title>
+  <!-- Versi yang benar-benar support decodeFromVideoDevice -->
+  <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-      background: #f5f5f5;
-    }
-    h1 {
-      color: #333;
-    }
-    video {
-      border: 2px solid #007bff;
-      border-radius: 8px;
-      max-width: 100%;
-      height: auto;
-    }
-    #result {
-      margin-top: 20px;
-      padding: 12px;
-      background: #e9ecef;
-      border-radius: 6px;
-      font-weight: bold;
-      min-height: 24px;
-    }
-    .error {
-      color: #dc3545;
-      background: #f8d7da;
-    }
-    .success {
-      color: #155724;
-      background: #d4edda;
-    }
-    button {
-      margin-top: 10px;
-      padding: 8px 16px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover { background: #0069d9; }
+    body { font-family: Arial; text-align: center; padding: 20px; }
+    video { border: 2px solid #007bff; border-radius: 8px; max-width: 100%; }
+    #result { margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 4px; }
   </style>
 </head>
 <body>
-  <h1>🔍 Barcode & QR Scanner</h1>
-  <p>Arahkan kamera ke barcode atau QR code</p>
-  
-  <video id="video" width="400" height="300" playsinline style="display:none;"></video>
-  <div id="result">Memuat kamera...</div>
-  <button id="startBtn">▶️ Mulai Scan</button>
+  <h2>🔍 Barcode & QR Scanner</h2>
+  <video id="video" width="400" height="300" playsinline></video>
+  <div id="result">Hasil akan muncul di sini...</div>
 
   <script>
-    let codeReader;
+    const codeReader = new ZXing.BrowserMultiFormatReader();
     const video = document.getElementById('video');
     const resultDiv = document.getElementById('result');
-    const startBtn = document.getElementById('startBtn');
 
-    startBtn.addEventListener('click', async () => {
-      startBtn.disabled = true;
-      resultDiv.textContent = 'Mengakses kamera...';
-      resultDiv.className = '';
-
-      try {
-        // Coba akses kamera manual dulu
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        video.srcObject = stream;
-        video.style.display = 'inline-block';
-        video.play();
-
-        // Mulai scanning
-        codeReader = new ZXing.BrowserMultiFormatReader();
-        codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
-          if (result) {
-            const text = result.getText();
-            resultDiv.textContent = '✅ Hasil: ' + text;
-            resultDiv.className = 'success';
-            setTimeout(() => codeReader.reset(), 1500);
-          }
-          if (err && !(err instanceof ZXing.NotFoundException)) {
-            console.error('Error:', err);
-            if (err.name === 'NotAllowedError') {
-              resultDiv.textContent = '❌ Akses kamera ditolak. Silakan izinkan di browser.';
-              resultDiv.className = 'error';
-            } else {
-              resultDiv.textContent = '⚠️ Error: ' + (err.message || err.name);
-              resultDiv.className = 'error';
-            }
-          }
-        });
-
-      } catch (err) {
-        console.error('Gagal akses kamera:', err);
-        resultDiv.className = 'error';
-        if (err.name === 'NotAllowedError') {
-          resultDiv.textContent = '❌ Anda menolak akses kamera. Klik ikon kamera di address bar → pilih "Allow".';
-        } else if (err.name === 'NotFoundError') {
-          resultDiv.textContent = '❌ Tidak ada kamera ditemukan.';
-        } else {
-          resultDiv.textContent = '❌ Gagal membuka kamera: ' + err.message;
-        }
-        startBtn.disabled = false;
+    // Mulai scanning terus-menerus
+    codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+      if (result) {
+        resultDiv.textContent = '✅ ' + result.getText();
+        console.log('Hasil:', result.getText());
+        // Hentikan sementara agar tidak spam
+        setTimeout(() => codeReader.reset(), 1000);
+      }
+      if (err && !(err instanceof ZXing.NotFoundException)) {
+        console.error('Error:', err);
+        resultDiv.textContent = '❌ Error: ' + err.message;
       }
     });
   </script>
