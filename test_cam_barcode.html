@@ -3,33 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Scanner - Fixed</title>
-  <!-- Versi yang benar -->
+  <title>QR Scanner</title>
   <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
 </head>
 <body>
-  <h2>Scan QR / Barcode</h2>
+  <h2>QR Scanner</h2>
   <video id="video" width="300" height="200" playsinline></video>
-  <div id="result">Hasil: ...</div>
+  <div id="result">Arahkan ke QR code...</div>
 
   <script>
-    // Tunggu sampai halaman & ZXing siap
-    window.addEventListener('load', () => {
-      const codeReader = new ZXing.BrowserMultiFormatReader();
-      const resultDiv = document.getElementById('result');
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const resultDiv = document.getElementById('result');
 
-      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
-        if (result) {
-          resultDiv.textContent = '✅ ' + result.getText();
-          console.log('Berhasil:', result.getText());
-          // Hentikan sementara
-          setTimeout(() => codeReader.reset(), 1000);
-        }
-        if (err && !(err instanceof ZXing.NotFoundException)) {
-          console.error('Error:', err);
-          resultDiv.textContent = '❌ ' + (err.message || err.name);
-        }
-      });
+    // Hanya fokus ke QR Code (lebih cepat & akurat)
+    const hints = new Map();
+    const formats = [ZXing.BarcodeFormat.QR_CODE];
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+    codeReader.hints = hints;
+
+    codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+      if (result) {
+        resultDiv.textContent = '✅ ' + result.getText();
+        console.log('Berhasil:', result.getText());
+        setTimeout(() => codeReader.reset(), 1500);
+      }
+      if (err && !(err instanceof ZXing.NotFoundException)) {
+        console.error('Error:', err);
+        resultDiv.textContent = '❌ Error: ' + err.message;
+      }
     });
   </script>
 </body>
