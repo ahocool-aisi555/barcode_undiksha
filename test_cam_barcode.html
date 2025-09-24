@@ -3,32 +3,45 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>QR Scanner</title>
+  <title>QR Scanner - No Camera Close</title>
   <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 20px; }
+    video { border: 2px solid #007bff; border-radius: 8px; max-width: 100%; }
+    #result { margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 4px; }
+    .success { color: green; font-weight: bold; }
+  </style>
 </head>
 <body>
-  <h2>QR Scanner</h2>
+  <h2>🔍 QR / Barcode Scanner</h2>
   <video id="video" width="300" height="200" playsinline></video>
   <div id="result">Arahkan ke QR code...</div>
 
   <script>
     const codeReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById('video');
     const resultDiv = document.getElementById('result');
 
-    // Hanya fokus ke QR Code (lebih cepat & akurat)
-    const hints = new Map();
-    const formats = [ZXing.BarcodeFormat.QR_CODE];
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-    codeReader.hints = hints;
+    // Hindari deteksi berulang dalam 2 detik
+    let lastScanTime = 0;
+    const DEBOUNCE_DELAY = 2000; // 2 detik
 
     codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
       if (result) {
-        resultDiv.textContent = '✅ ' + result.getText();
-        console.log('Berhasil:', result.getText());
-        setTimeout(() => codeReader.reset(), 1500);
+        const now = Date.now();
+        if (now - lastScanTime > DEBOUNCE_DELAY) {
+          const text = result.getText();
+          console.log('✅ Terdeteksi:', text);
+          resultDiv.innerHTML = `<span class="success">✅ ${text}</span>`;
+          lastScanTime = now;
+
+          // Opsional: getarkan HP (jika diizinkan)
+          if (navigator.vibrate) navigator.vibrate(100);
+        }
+        // ❌ JANGAN panggil codeReader.reset() → biarkan kamera tetap hidup!
       }
       if (err && !(err instanceof ZXing.NotFoundException)) {
-        console.error('Error:', err);
+        console.error('❌ Error:', err);
         resultDiv.textContent = '❌ Error: ' + err.message;
       }
     });
