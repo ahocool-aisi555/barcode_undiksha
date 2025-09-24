@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scanner + Beep Base64</title>
+  <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h2 { color: #333; }
+    video {
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      max-width: 100%;
+      height: auto;
+    }
+    #result {
+      margin-top: 15px;
+      padding: 10px;
+      background: #e9ecef;
+      border-radius: 6px;
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔍 Barcode / QR Scanner</h2>
+  <video id="video" width="400" height="300" playsinline></video>
+  <div id="result">Arahkan ke QR code...</div>
+
+  <!-- Audio beep dalam base64 (suara pendek 800 Hz, 100 ms) -->
+  <audio id="beep" src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLbn569vHQ1Qp+Pwtm4qB0eZ4fK5cSwFQoje8LtsKANJkeHxum4rA0iQ4fG7bysDSJDh8bxwLANIkOHxvHEsA0iQ4fG8cSwDSJDh8b1yLQRIj97xvnMtBEiO3vG+cy0ESI7e8b50LgVIjd3wv3QuBkiM3fC/dC4GSIzd8L91LwdIi9zv..."></audio>
+
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById('video');
+    const resultDiv = document.getElementById('result');
+    const beepAudio = document.getElementById('beep');
+
+    let lastScanTime = 0;
+    const DEBOUNCE_DELAY = 2000; // 2 detik
+
+    // Fungsi mainkan beep
+    function playBeep() {
+      beepAudio.currentTime = 0;
+      beepAudio.play().catch(e => {
+        console.warn("Gagal mainkan beep (mungkin belum interaksi user):", e);
+      });
+    }
+
+    // Mulai scanning
+    codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+      if (result) {
+        const now = Date.now();
+        if (now - lastScanTime > DEBOUNCE_DELAY) {
+          const text = result.getText();
+          console.log('✅ Terdeteksi:', text);
+          resultDiv.textContent = '✅ ' + text;
+          lastScanTime = now;
+
+          // Mainkan beep
+          playBeep();
+
+          // Getaran (jika didukung)
+          if (navigator.vibrate) navigator.vibrate(100);
+        }
+      }
+      if (err && !(err instanceof ZXing.NotFoundException)) {
+        console.error('❌ Error:', err);
+        resultDiv.textContent = '❌ Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
