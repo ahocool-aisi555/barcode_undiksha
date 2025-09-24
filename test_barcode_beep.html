@@ -36,7 +36,7 @@
 
   <!-- Audio beep dalam base64 (suara pendek 800 Hz, 100 ms) -->
   <audio id="beep" src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLbn569vHQ1Qp+Pwtm4qB0eZ4fK5cSwFQoje8LtsKANJkeHxum4rA0iQ4fG7bysDSJDh8bxwLANIkOHxvHEsA0iQ4fG8cSwDSJDh8b1yLQRIj97xvnMtBEiO3vG+cy0ESI7e8b50LgVIjd3wv3QuBkiM3fC/dC4GSIzd8L91LwdIi9zv..."></audio>
-
+  <button onclick="startScanner()">▶️ Mulai Scan</button>
   <script>
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const video = document.getElementById('video');
@@ -45,6 +45,7 @@
 
     let lastScanTime = 0;
     const DEBOUNCE_DELAY = 2000; // 2 detik
+    let scannerStarted = false;
 
     // Fungsi mainkan beep
     function playBeep() {
@@ -54,6 +55,15 @@
       });
     }
 
+   function startScanner() {
+    if (scannerStarted) return;
+    scannerStarted = true;
+
+    // Mainkan beep diam-diam (untuk "unlock" autoplay)
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.resume(); // Aktifkan audio context
+
+    
     // Mulai scanning
     codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
       if (result) {
@@ -76,6 +86,7 @@
         resultDiv.textContent = '❌ Error: ' + err.message;
       }
     });
+   }  
   </script>
 </body>
 </html>
