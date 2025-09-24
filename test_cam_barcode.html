@@ -1,39 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Barcode Scanner - Fixed</title>
-  <!-- Versi yang benar-benar support decodeFromVideoDevice -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scanner - Fixed</title>
+  <!-- Versi yang benar -->
   <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
-  <style>
-    body { font-family: Arial; text-align: center; padding: 20px; }
-    video { border: 2px solid #007bff; border-radius: 8px; max-width: 100%; }
-    #result { margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 4px; }
-  </style>
 </head>
 <body>
-  <h2>🔍 Barcode & QR Scanner</h2>
-  <video id="video" width="400" height="300" playsinline></video>
-  <div id="result">Hasil akan muncul di sini...</div>
+  <h2>Scan QR / Barcode</h2>
+  <video id="video" width="300" height="200" playsinline></video>
+  <div id="result">Hasil: ...</div>
 
   <script>
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    const video = document.getElementById('video');
-    const resultDiv = document.getElementById('result');
+    // Tunggu sampai halaman & ZXing siap
+    window.addEventListener('load', () => {
+      const codeReader = new ZXing.BrowserMultiFormatReader();
+      const resultDiv = document.getElementById('result');
 
-    // Mulai scanning terus-menerus
-    codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
-      if (result) {
-        resultDiv.textContent = '✅ ' + result.getText();
-        console.log('Hasil:', result.getText());
-        // Hentikan sementara agar tidak spam
-        setTimeout(() => codeReader.reset(), 1000);
-      }
-      if (err && !(err instanceof ZXing.NotFoundException)) {
-        console.error('Error:', err);
-        resultDiv.textContent = '❌ Error: ' + err.message;
-      }
+      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+        if (result) {
+          resultDiv.textContent = '✅ ' + result.getText();
+          console.log('Berhasil:', result.getText());
+          // Hentikan sementara
+          setTimeout(() => codeReader.reset(), 1000);
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error('Error:', err);
+          resultDiv.textContent = '❌ ' + (err.message || err.name);
+        }
+      });
     });
   </script>
 </body>
