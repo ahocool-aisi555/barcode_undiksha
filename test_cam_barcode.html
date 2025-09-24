@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Barcode & QR Scanner</title>
+  <script src="https://unpkg.com/@zxing/library@0.12.3/umd/index.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+    }
+    video {
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      max-width: 100%;
+      height: auto;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      background: #e9ecef;
+      border-radius: 6px;
+      font-weight: bold;
+      color: #28a745;
+      min-height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Barcode & QR Scanner</h1>
+  <p>Arahkan kamera ke barcode atau QR code</p>
+  
+  <video id="video" width="400" height="300" playsinline></video>
+  <div id="result">Hasil scan akan muncul di sini...</div>
+
+  <script>
+    // Tunggu sampai ZXing dimuat
+    window.addEventListener('load', () => {
+      if (typeof ZXing === 'undefined') {
+        document.getElementById('result').textContent = '❌ Gagal memuat ZXing!';
+        return;
+      }
+
+      const codeReader = new ZXing.BrowserMultiFormatReader();
+      const video = document.getElementById('video');
+      const resultDiv = document.getElementById('result');
+
+      // Mulai scanning
+      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+        if (result) {
+          const text = result.getText();
+          console.log('✅ Terdeteksi:', text);
+          resultDiv.textContent = '📄 Hasil: ' + text;
+          // Hentikan sementara agar tidak terus-menerus scan
+          setTimeout(() => {
+            try {
+              codeReader.reset();
+            } catch (e) {
+              console.warn('Reset error (aman diabaikan):', e);
+            }
+          }, 1500);
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error('⚠️ Error:', err);
+          resultDiv.textContent = '⚠️ Error: ' + err.message;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
