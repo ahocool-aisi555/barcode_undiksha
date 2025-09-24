@@ -23,54 +23,91 @@
     }
     #result {
       margin-top: 20px;
-      padding: 10px;
+      padding: 12px;
       background: #e9ecef;
       border-radius: 6px;
       font-weight: bold;
-      color: #28a745;
       min-height: 24px;
     }
+    .error {
+      color: #dc3545;
+      background: #f8d7da;
+    }
+    .success {
+      color: #155724;
+      background: #d4edda;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { background: #0069d9; }
   </style>
 </head>
 <body>
   <h1>🔍 Barcode & QR Scanner</h1>
   <p>Arahkan kamera ke barcode atau QR code</p>
   
-  <video id="video" width="400" height="300" playsinline></video>
-  <div id="result">Hasil scan akan muncul di sini...</div>
+  <video id="video" width="400" height="300" playsinline style="display:none;"></video>
+  <div id="result">Memuat kamera...</div>
+  <button id="startBtn">▶️ Mulai Scan</button>
 
   <script>
-    // Tunggu sampai ZXing dimuat
-    window.addEventListener('load', () => {
-      if (typeof ZXing === 'undefined') {
-        document.getElementById('result').textContent = '❌ Gagal memuat ZXing!';
-        return;
-      }
+    let codeReader;
+    const video = document.getElementById('video');
+    const resultDiv = document.getElementById('result');
+    const startBtn = document.getElementById('startBtn');
 
-      const codeReader = new ZXing.BrowserMultiFormatReader();
-      const video = document.getElementById('video');
-      const resultDiv = document.getElementById('result');
+    startBtn.addEventListener('click', async () => {
+      startBtn.disabled = true;
+      resultDiv.textContent = 'Mengakses kamera...';
+      resultDiv.className = '';
 
-      // Mulai scanning
-      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
-        if (result) {
-          const text = result.getText();
-          console.log('✅ Terdeteksi:', text);
-          resultDiv.textContent = '📄 Hasil: ' + text;
-          // Hentikan sementara agar tidak terus-menerus scan
-          setTimeout(() => {
-            try {
-              codeReader.reset();
-            } catch (e) {
-              console.warn('Reset error (aman diabaikan):', e);
+      try {
+        // Coba akses kamera manual dulu
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        video.srcObject = stream;
+        video.style.display = 'inline-block';
+        video.play();
+
+        // Mulai scanning
+        codeReader = new ZXing.BrowserMultiFormatReader();
+        codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+          if (result) {
+            const text = result.getText();
+            resultDiv.textContent = '✅ Hasil: ' + text;
+            resultDiv.className = 'success';
+            setTimeout(() => codeReader.reset(), 1500);
+          }
+          if (err && !(err instanceof ZXing.NotFoundException)) {
+            console.error('Error:', err);
+            if (err.name === 'NotAllowedError') {
+              resultDiv.textContent = '❌ Akses kamera ditolak. Silakan izinkan di browser.';
+              resultDiv.className = 'error';
+            } else {
+              resultDiv.textContent = '⚠️ Error: ' + (err.message || err.name);
+              resultDiv.className = 'error';
             }
-          }, 1500);
+          }
+        });
+
+      } catch (err) {
+        console.error('Gagal akses kamera:', err);
+        resultDiv.className = 'error';
+        if (err.name === 'NotAllowedError') {
+          resultDiv.textContent = '❌ Anda menolak akses kamera. Klik ikon kamera di address bar → pilih "Allow".';
+        } else if (err.name === 'NotFoundError') {
+          resultDiv.textContent = '❌ Tidak ada kamera ditemukan.';
+        } else {
+          resultDiv.textContent = '❌ Gagal membuka kamera: ' + err.message;
         }
-        if (err && !(err instanceof ZXing.NotFoundException)) {
-          console.error('⚠️ Error:', err);
-          resultDiv.textContent = '⚠️ Error: ' + err.message;
-        }
-      });
+        startBtn.disabled = false;
+      }
     });
   </script>
 </body>
