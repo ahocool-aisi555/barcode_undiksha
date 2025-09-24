@@ -48,12 +48,15 @@
     let scannerStarted = false;
 
     // Fungsi mainkan beep
-    function playBeep() {
-      beepAudio.currentTime = 0;
-      beepAudio.play().catch(e => {
-        console.warn("Gagal mainkan beep (mungkin belum interaksi user):", e);
-      });
-    }
+        function playBeep() {
+            // Base64 encoded WAV file for a short beep sound
+            // This is a common, short beep sound often found online.
+            // Replace with your desired Base64 encoded audio data if needed.
+            const base64Beep = "data:audio/wav;base64,UklGRl9vWlVXQVZFZm10IBAAAAABAAEARFEgICgABAAgAAABAAgAEAAAEABAAgAgAAABJkYXRhAAAAAEgAAAAAAAAAAAAA";
+
+            const audio = new Audio(base64Beep);
+            audio.play();
+        }
 
    function startScanner() {
     if (scannerStarted) return;
