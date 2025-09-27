@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scanner + Beep Base64</title>
+  <title>Scanner + Beep test by ahocool</title>
   <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
   <style>
     body {
@@ -33,10 +33,8 @@
   <h2>🔍 Barcode / QR Scanner</h2>
   <video id="video" width="400" height="300" playsinline></video>
   <div id="result">Arahkan ke QR code...</div>
-
-  <!-- Audio beep dalam base64 (suara pendek 800 Hz, 100 ms) -->
-  <audio id="beep" src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLbn569vHQ1Qp+Pwtm4qB0eZ4fK5cSwFQoje8LtsKANJkeHxum4rA0iQ4fG7bysDSJDh8bxwLANIkOHxvHEsA0iQ4fG8cSwDSJDh8b1yLQRIj97xvnMtBEiO3vG+cy0ESI7e8b50LgVIjd3wv3QuBkiM3fC/dC4GSIzd8L91LwdIi9zv..."></audio>
   <button onclick="startScanner()">▶️ Mulai Scan</button>
+  
   <script>
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const video = document.getElementById('video');
