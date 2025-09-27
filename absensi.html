@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scanner + Beep + MQTT by ahocool</title>
+  <!-- ZXing untuk QR scanning -->
+  <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+  <!-- Paho MQTT untuk WebSocket -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h2 { color: #333; }
+    video {
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      max-width: 100%;
+      height: auto;
+    }
+    #result {
+      margin-top: 15px;
+      padding: 10px;
+      background: #e9ecef;
+      border-radius: 6px;
+      font-weight: bold;
+      color: green;
+    }
+    #mqtt-status {
+      margin-top: 10px;
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔍 Barcode / QR Scanner + MQTT</h2>
+  <video id="video" width="400" height="300" playsinline></video>
+  <div id="result">Arahkan ke QR code...</div>
+  <div id="mqtt-status">🔌 Menyambung ke MQTT...</div>
+  <button onclick="startScanner()">▶️ Mulai Scan</button>
+
+  <script>
+    // === MQTT Setup ===
+    const MQTT_BROKER = "test.mosquitto.org";
+    const MQTT_PORT = 8080;
+    const MQTT_TOPIC = "/aisi555/TRSE";
+    let mqttClient;
+
+    function initMqtt() {
+      console.log("📡 Menginisialisasi koneksi MQTT...");
+      mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, "/mqtt", "webclient-" + Math.random().toString(16).substr(2, 8));
+
+      mqttClient.onConnectionLost = (responseObject) => {
+        let msg = "❌ Koneksi MQTT terputus";
+        if (responseObject.errorCode !== 0) {
+          msg += ": " + responseObject.errorMessage;
+        }
+        console.warn(msg);
+        document.getElementById("mqtt-status").textContent = msg;
+        // Coba reconnect setelah 3 detik
+        setTimeout(initMqtt, 3000);
+      };
+
+      mqttClient.onMessageDelivered = (message) => {
+        console.log("📤 Pesan terkirim:", message.payloadString);
+      };
+
+      const options = {
+        onSuccess: () => {
+          console.log("✅ Terhubung ke MQTT!");
+          document.getElementById("mqtt-status").textContent = "✅ Terhubung ke MQTT";
+        },
+        onFailure: (err) => {
+          console.error("❌ Gagal terhubung ke MQTT:", err.errorMessage);
+          document.getElementById("mqtt-status").textContent = "❌ Gagal koneksi MQTT";
+          setTimeout(initMqtt, 5000); // coba lagi
+        },
+        // Tidak perlu username/password karena test.mosquitto.org terbuka
+      };
+
+      mqttClient.connect(options);
+    }
+
+    // Kirim teks ke MQTT
+    function sendToMqtt(text) {
+      if (mqttClient && mqttClient.isConnected()) {
+        const message = new Paho.MQTT.Message(text);
+        message.destinationName = MQTT_TOPIC;
+        mqttClient.send(message);
+        console.log("📤 Kirim ke MQTT:", text);
+      } else {
+        console.warn("⚠️ MQTT belum siap, skip pengiriman.");
+      }
+    }
+
+    // === QR Scanner ===
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById('video');
+    const resultDiv = document.getElementById('result');
+
+    let lastScanTime = 0;
+    const DEBOUNCE_DELAY = 2000; // 2 detik
+    let scannerStarted = false;
+
+    // Fungsi mainkan beep
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 800;
+        gainNode.gain.value = 0.3;
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.1);
+
+        setTimeout(() => {
+          if (ctx.state === 'running') ctx.close();
+        }, 200);
+      } catch (e) {
+        console.warn('Gagal memainkan beep:', e);
+      }
+    }
+
+    function startScanner() {
+      if (scannerStarted) return;
+      scannerStarted = true;
+
+      // Unlock audio context
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume();
+
+      // Mulai scanning
+      codeReader.decodeFromVideoDevice(undefined, 'video', (result, err) => {
+        if (result) {
+          const now = Date.now();
+          if (now - lastScanTime > DEBOUNCE_DELAY) {
+            const text = result.getText();
+            console.log('✅ Terdeteksi:', text);
+            resultDiv.textContent = '✅ ' + text;
+            lastScanTime = now;
+
+            playBeep();
+            if (navigator.vibrate) navigator.vibrate(100);
+
+            // 🔥 Kirim ke MQTT!
+            sendToMqtt(text);
+          }
+        }
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+          console.error('❌ Error:', err);
+          resultDiv.textContent = '❌ Error: ' + err.message;
+        }
+      });
+    }
+
+    // Inisialisasi MQTT saat halaman dimuat
+    window.addEventListener('load', () => {
+      initMqtt();
+    });
+  </script>
+</body>
+</html>
